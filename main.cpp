@@ -10,15 +10,27 @@ struct a{
     a(int a_){
         _a=a_;
     }
+    bool operator<(const a& other)const{
+        return _a<other._a;
+    }
 };
 //struct
 //using namespace sjtu;
 int main(){
+    sjtu::map<a,int>n;
+    a aa(2);
+//    n[aa]=2;
     sjtu::map<int ,int>m;
     for (int i = 0; i < 10; ++i) {
         m[i]=i;
     }
-
+//    for (auto item:m) {
+//        cout<<item.second;
+//    }
+//    auto item=m.begin();
+//    for (int i = 0; i < 10; ++i) {
+//        cout<<m[i];
+//    }
 //    std::map<int ,int >mm;
 //    mm[1];
 //    cout<<mm.size();

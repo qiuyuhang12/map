@@ -60,13 +60,13 @@ namespace sjtu {
                 return val.second;
             }
 
-            const Key &_get_key() const {
-                return val.first;
-            }
-
-            const T &_get_t() const {
-                return val.second;
-            }
+//            const Key &_get_key() const {
+//                return val.first;
+//            }
+//
+//            const T &_get_t() const {
+//                return val.second;
+//            }
 
             node *find(const Key &_key) {
                 if (_key == this->get_key()) return this;
@@ -85,12 +85,14 @@ namespace sjtu {
             if (nd == nullptr)return -1;
             return nd->height;
         }
-        void back_height(node*nd){
-            if (nd== nullptr)return;
-            if (nd->father== nullptr)return;
-            nd->father->height= max_height(nd->father->left,nd->father->right);
+
+        void back_height(node *nd) {
+            if (nd == nullptr)return;
+            if (nd->father == nullptr)return;
+            nd->father->height = max_height(nd->father->left, nd->father->right) + 1;
             back_height(nd->father);
         }
+
         size_t max_height(node *l, node *r) {
             if (l == nullptr && r == nullptr) return -1;
             if (l == nullptr) return r->height;
@@ -99,7 +101,7 @@ namespace sjtu {
         }
 
         bool good(node *nd) {
-            if (nd== nullptr)return true;
+            if (nd == nullptr)return true;
             return (height(nd->left) - height(nd->right) < 2 && height(nd->right) - height(nd->left) < 2 &&
                     nd->height == max_height(nd->left, nd->right) + 1);
         }
@@ -116,7 +118,7 @@ namespace sjtu {
             nd = nullptr;
         }
 
-        void copy(node *&nd, const node *const other) {
+        void copy(node *&nd, const node *other) {
             if (other == nullptr)return;
             copy(nd->left, other->left);
             copy(nd->right, other->right);
@@ -181,7 +183,7 @@ namespace sjtu {
                     else f->right = nd;
                 }
                 if (nd->father != nullptr) nd->father->height = max_height(nd->father->left, nd->father->right) + 1;
-//                back_height(nd);
+                back_height(nd);
                 return nd;
             }
             node *tmp = nullptr;
@@ -192,6 +194,7 @@ namespace sjtu {
                     assert(height(nd->left) - height(nd->right) == 2);
                     if (height(nd->left->left) >= height(nd->left->right))ll(nd);
                     else lr(nd);
+                    back_height(nd);
                 }
             } else {
                 tmp = _insert(nd->right, nd, key, t, right);
@@ -199,6 +202,7 @@ namespace sjtu {
                     assert(height(nd->right) - height(nd->left) == 2);
                     if (height(nd->right->right) >= height(nd->right->left))rr(nd);
                     else rl(nd);
+                    back_height(nd);
                 }
             }
             assert(good(nd));
@@ -269,15 +273,19 @@ namespace sjtu {
                         (height(t->right->left) - height(t->right->right) == 1 ||
                          height(t->right->left) - height(t->right->right) == 0 ||
                          height(t->right->left) - height(t->right->right) == -1)));
-                if (height(t->right) - height(t->left) == 1)return;
-                else if (height(t->right) == height(t->left)) {
+                if (height(t->right) - height(t->left) == 1) {
+                    back_height(t);
+                    return;
+                } else if (height(t->right) == height(t->left)) {
                     t->father->height = max_height(t->father->left, t->father->right);
                     adjust(t->father, t->father->left == t ? left : right);
+                    back_height(t);
                 } else {
                     bool flag = height(t->right->left) != height(t->right->right);
                     if (height(t->right->left) > height(t->right->right)) {
                         rl(t);
                         adjust(t->father, t->father->left == t ? left : right);
+                        back_height(t);
                         return;
                     }
                     rr(t);
@@ -285,6 +293,7 @@ namespace sjtu {
                     if (flag) {//??
                         adjust(t->father, t->father->left == t ? left : right);
                     }
+                    back_height(t);
                 }
             } else {
                 assert(height(t->left) - height(t->right) == 1 || height(t->left) - height(t->right) == 0 ||
@@ -292,15 +301,19 @@ namespace sjtu {
                         (height(t->left->right) - height(t->left->left) == 1 ||
                          height(t->left->right) - height(t->left->left) == 0 ||
                          height(t->left->right) - height(t->left->left) == -1)));
-                if (height(t->left) - height(t->right) == 1)return;
-                else if (height(t->left) == height(t->right)) {
+                if (height(t->left) - height(t->right) == 1) {
+                    back_height(t);
+                    return;
+                } else if (height(t->left) == height(t->right)) {
                     t->father->height = max_height(t->father->left, t->father->right);
                     adjust(t->father, t->father->left == t ? left : right);
+                    back_height(t);
                 } else {
                     bool flag = height(t->left->right) != height(t->left->left);
                     if (height(t->left->right) > height(t->left->left)) {
                         lr(t);
                         adjust(t->father, t->father->left == t ? left : right);
+                        back_height(t);
                         return;
                     }
                     ll(t);
@@ -308,6 +321,7 @@ namespace sjtu {
                     if (flag) {
                         adjust(t->father, t->father->left == t ? left : right);
                     }
+                    back_height(t);
                 }
             }
         }
@@ -334,6 +348,7 @@ namespace sjtu {
         class const_iterator;
 
         class iterator {
+            friend map;
         private:
 
             node *rt = nullptr;
