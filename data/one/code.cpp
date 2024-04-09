@@ -61,6 +61,7 @@ void tester(void) {
 		if (i > 1896 && i <= 2016) {
 			continue;
 		}
+//        std::cout<<map.count(Integer(i));
 		assert(map.count(Integer(i)) == 1);
 		assert(map.find(Integer(i)) != map.end());
 		map.erase(map.find(Integer(i)));

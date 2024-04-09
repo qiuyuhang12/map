@@ -33,7 +33,6 @@ namespace sjtu {
         typedef pair<Key, T> value_type;
 
     private:
-
         enum subTree {
             left, right
         };
@@ -57,7 +56,11 @@ namespace sjtu {
             node(value_type valueType, node *f = NULL, node *l = NULL, node *r = NULL) : val(valueType), father(f),
                                                                                          left(l), right(r) {}
 
-            const Key &get_key() {
+            node(const node &other) : val(other.val) {
+            }
+
+
+            Key &get_key() {
                 return val.first;
             }
 
@@ -76,8 +79,9 @@ namespace sjtu {
             node *find(const Key &_key) {
 //                if (this== nullptr)return nullptr;
                 assert(this != nullptr);
-                if (eq(_key, this->get_key())) return this;
-                if (Compare()(_key, this->get_key())) {
+//                std::cout<<val.first<<std::endl;
+                if (eq(_key, get_key())) return this;
+                if (Compare()(_key, get_key())) {
                     if (left == nullptr) return nullptr;
                     return left->find(_key);
                 } else {
@@ -87,7 +91,61 @@ namespace sjtu {
             }
         };
 
-//        int height(node *);
+        void exchange(node *higher, node *lower) {
+            assert(higher != nullptr);
+            assert(lower != nullptr);
+            if (higher==root)root=lower;
+            int tmp=lower->height;
+            lower->height=higher->height;
+            higher->height=tmp;
+            node *hf = higher->father;
+            node *hl = higher->left;
+            node *hr = higher->right;
+            node *lf = lower->father;
+            node *ll = lower->left;
+            node *lr = lower->right;
+            if (lower->father != higher) {
+                higher->father = lf;
+                higher->left = ll;
+                higher->right = lr;
+                lower->father = hf;
+                lower->left = hl;
+                lower->right = hr;
+                if (hf != nullptr) {
+                    if (hf->left == higher)hf->left = lower;
+                    else hf->right = lower;
+                }
+                if (lf != nullptr) {
+                    if (lf->left == lower)lf->left = higher;
+                    else lf->right = higher;
+                }
+                if (ll != nullptr)ll->father = higher;
+                if (lr != nullptr)lr->father = higher;
+                if (hl != nullptr)hl->father = lower;
+                if (hr != nullptr)hr->father = lower;
+            } else {
+                if (ll != nullptr)ll->father = higher;
+                if (lr != nullptr)lr->father = higher;
+                higher->left = ll;
+                higher->right = lr;
+                lower->father = higher->father;
+                if (hf != nullptr) {
+                    if (hf->left == higher)hf->left = lower;
+                    else hf->right = lower;
+                }
+                higher->father = lower;
+                if (hl == lower) {
+                    lower->left = higher;
+                    lower->right = hr;
+                    if (hr != nullptr)hr->father = lower;
+                } else {
+                    lower->left = hl;
+                    lower->right = higher;
+                    if (hl != nullptr)hl->father = lower;
+                }
+            }
+        }
+
         int height(node *nd) {
             if (nd == nullptr)return -1;
             return nd->height;
@@ -96,8 +154,11 @@ namespace sjtu {
         void back_height(node *nd) {
             if (nd == nullptr)return;
             if (nd->father == nullptr)return;
+            int old_height = nd->father->height;
             nd->father->height = max_height(nd->father->left, nd->father->right) + 1;
-            back_height(nd->father);
+//            if (old_height!=nd->father->height){
+//                back_height(nd->father);
+//            }
         }
 
         size_t max_height(node *l, node *r) {
@@ -109,11 +170,12 @@ namespace sjtu {
 
         bool good(node *nd) {
             if (nd == nullptr)return true;
+//            bool flag= true;
+            if (nd->father == nullptr && nd != root)return false;
             return (height(nd->left) - height(nd->right) < 2 && height(nd->right) - height(nd->left) < 2 &&
                     nd->height == max_height(nd->left, nd->right) + 1);
         }
 
-//        node *faa= nullptr;
         node *root = nullptr;
         size_t _size = 0;
 
@@ -125,18 +187,25 @@ namespace sjtu {
             nd = nullptr;
         }
 
-        void copy(node *&nd, const node *other) {
-            if (other == nullptr)return;
-            copy(nd->left, other->left);
-            copy(nd->right, other->right);
+        node *copy(node *&nd, const node *other) {
+            if (other == nullptr)return nullptr;
             nd = new node(*other);
+            node *l = copy(nd->left, other->left);
+            node *r = copy(nd->right, other->right);
+            nd->right = r;
+            nd->left = l;
+            if (r != nullptr)r->father = nd;
+            if (l != nullptr)l->father = nd;
+            return nd;
         }
 
-        size_t ll(node *&nd) {
+        size_t ll(node *nd) {
             node *f = nd->father, *s = nd, *ls = nd->left, *lsrs = ls->right;
-            if (f!= nullptr){
-                if (f->left==s)f->left=ls;
-                else f->right=ls;
+            if (f != nullptr) {
+                if (f->left == s)f->left = ls;
+                else f->right = ls;
+            } else {
+                root = ls;
             }
             nd = ls;
             nd->father = f;
@@ -146,35 +215,56 @@ namespace sjtu {
             if (lsrs != nullptr)lsrs->father = s;
             s->height = max_height(s->left, s->right) + 1;
             nd->height = max_height(nd->left, nd->right) + 1;
-            assert(good(nd));
-            assert(good(nd->left));
-            assert(good(nd->right));
+            // std::cout<<"llll"<<std::endl;print();///
+//            assert(good(nd));
+//            assert(good(nd->left));
+//            assert(good(nd->right));
             return nd->height;
         }
 
-        size_t rr(node *&nd) {
+        size_t rr(node *nd) {
             //print();std::cout<<"rrrr"<<std::endl;///
             node *f = nd->father, *s = nd, *rs = nd->right, *rsrl = rs->left;
-            if (f!= nullptr){
-                if (f->right==s)f->right=rs;
-                else f->left=rs;
+            node *tmp = nd->left;
+//            if (tmp!= nullptr&&tmp->father!= nullptr)std::cout<<tmp->val.first<<"f:"<<tmp->father->val.first<<std::endl;
+            if (f != nullptr) {
+                if (f->right == s)f->right = rs;
+                else f->left = rs;
+            } else {
+                root = rs;//?
             }
+//            if (tmp!= nullptr&&tmp->father!= nullptr)std::cout<<tmp->val.first<<"f1:"<<tmp->father->val.first<<std::endl;
+//            std::cout<<"aaaaaaaaaaaaaaaaaa"<<std::endl;print();///
             nd = rs;
+//            if (tmp!= nullptr&&tmp->father!= nullptr)std::cout<<tmp->val.first<<"f2:"<<tmp->father->val.first<<std::endl;
+//            std::cout<<"bbbbbbbbbbbbbbbbbb"<<std::endl;print();///
             nd->father = f;
+//            if (tmp!= nullptr&&tmp->father!= nullptr)std::cout<<tmp->val.first<<"f:"<<tmp->father->val.first<<std::endl;
+//            std::cout<<"cccccccccccccccccc"<<std::endl;print();///
             nd->left = s;
+//            if (tmp!= nullptr&&tmp->father!= nullptr)std::cout<<tmp->val.first<<"f:"<<tmp->father->val.first<<std::endl;
+//            std::cout<<"dddddddddddddddddd"<<std::endl;print();///
             s->father = nd;
+//            if (tmp!= nullptr&&tmp->father!= nullptr)std::cout<<tmp->val.first<<"f:"<<tmp->father->val.first<<std::endl;
+//            std::cout<<"eeeeeeeeeeeeeeeeee"<<std::endl;print();///
             s->right = rsrl;
+//            if (tmp!= nullptr&&tmp->father!= nullptr)std::cout<<tmp->val.first<<"f:"<<tmp->father->val.first<<std::endl;
+//            std::cout<<"fffffffffffffffffff"<<std::endl;print();///
             if (rsrl != nullptr)rsrl->father = s;
+//            if (tmp!= nullptr&&tmp->father!= nullptr)std::cout<<tmp->val.first<<"f:"<<tmp->father->val.first<<std::endl;
+            // std::cout<<"gggggggggggggggggg"<<std::endl;print();///
+//            std::cout<<"rrrr"<<std::endl;print();///
             s->height = max_height(s->left, s->right) + 1;
             nd->height = max_height(nd->left, nd->right) + 1;
-            //print();std::cout<<"rrrr"<<std::endl;///
-            assert(good(nd));
-            assert(good(nd->left));
-            assert(good(nd->right));
+//            std::cout<<"rrrr"<<std::endl;print();///
+//            assert(good(nd));
+//            assert(good(nd->left));
+//            assert(good(nd->right));
             return nd->height;
         }
 
         size_t lr(node *&nd) {
+            // std::cout<<"lr"<<std::endl;print();///
             rr(nd->left);
             ll(nd);
             assert(good(nd));
@@ -184,6 +274,7 @@ namespace sjtu {
         }
 
         size_t rl(node *&nd) {
+            // std::cout<<"rl"<<std::endl;print();///
             ll(nd->right);
             rr(nd);
             assert(good(nd));
@@ -200,18 +291,18 @@ namespace sjtu {
                     else f->right = nd;
                 }
                 if (nd->father != nullptr) nd->father->height = max_height(nd->father->left, nd->father->right) + 1;
-                back_height(nd);
+//                back_height(nd);
                 return nd;
             }
+            assert(nd->find(key) == nullptr);
             node *tmp = nullptr;
             if (Compare()(key, nd->get_key())) {
                 tmp = _insert(nd->left, nd, key, t, left);
-
                 if (height(nd->left) - height(nd->right) >= 2) {
                     assert(height(nd->left) - height(nd->right) == 2);
                     if (height(nd->left->left) >= height(nd->left->right))ll(nd);
                     else lr(nd);
-                    back_height(nd);
+//                    back_height(nd);
                 }
             } else {
                 tmp = _insert(nd->right, nd, key, t, right);
@@ -219,26 +310,28 @@ namespace sjtu {
                     assert(height(nd->right) - height(nd->left) == 2);
                     if (height(nd->right->right) >= height(nd->right->left))rr(nd);
                     else rl(nd);
-                    back_height(nd);
+//                    back_height(nd);
                 }
             }
+            nd->height = max_height(nd->left, nd->right) + 1;
             assert(good(nd));
             return tmp;
         }
-        void swap(node*&l,node*&r){
-            node* tmp=l;
-            l=r;
-            r=tmp;
+
+        void swap(node *&l, node *&r) {
+//            std::swap(l,r);
+            node *tmp = l;
+            l = r;
+            r = tmp;
         }
+
         void remove(node *&nd, node *_rt) {
-//            pt(nd->father->father->father->father);std::cout<<'f'<<std::endl;//;
-//            pt(nd);std::cout<<'r'<<std::endl;//
             assert(nd != nullptr);
             if (nd->left == nullptr && nd->right == nullptr) {
-                nd->height = 0;
+                nd->height = -1;
                 if (nd == root) {
                     delete nd;
-                    nd= nullptr;
+                    nd = nullptr;
                     root = nullptr;
                     return;
                 }
@@ -263,7 +356,7 @@ namespace sjtu {
                 if (nd == root) {
                     node *tmp = nd->left;
                     delete nd;
-                    nd= nullptr;
+                    nd = nullptr;
                     root = tmp;
                     root->father = nullptr;
                     return;
@@ -289,7 +382,7 @@ namespace sjtu {
                 if (nd == root) {
                     node *tmp = nd->right;
                     delete nd;
-                    nd= nullptr;
+                    nd = nullptr;
                     root = tmp;
                     root->father = nullptr;
                     return;
@@ -297,6 +390,7 @@ namespace sjtu {
                 if (nd->father->left == nd) {
                     nd->father->left = nd->right;
                     nd->right->father = nd->father;
+//                    print();
                     if (nd != root) {
                         nd->father->height = max_height(nd->father->left, nd->father->right) + 1;
                         adjust(nd->father, left);
@@ -314,29 +408,56 @@ namespace sjtu {
                     nd = nullptr;
                 }
             } else {
-//                if (nd->val.first == 3) {
-//                    std::cout << "hhh";
-//                }
                 node *tmp = getll(nd->right);
-                //print();
-//                std::cout << std::endl;///
+                exchange(nd,tmp);
+                remove(nd, _rt);
 //                nd->val.first = tmp->val.first;
 //                nd->val.second = tmp->val.second;
-                if (tmp->left!= nullptr)swap(nd->left->father,tmp->left->father);
-                if (tmp->right!= nullptr)swap(nd->right->father,tmp->right->father);
-                if (nd!=root){
-                    if (nd->father->left==nd&&tmp->father->left==tmp)swap(nd->father->left,tmp->father->left);
-                    else if (nd->father->left==nd&&tmp->father->right==tmp)swap(nd->father->left,tmp->father->right);
-                    else if (nd->father->right==nd&&tmp->father->left==tmp)swap(nd->father->right,tmp->father->left);
-                    else if (nd->father->right==nd&&tmp->father->right==tmp)swap(nd->father->right,tmp->father->right);
-                }
-                swap(nd->father,tmp->father);
-                if (tmp->left!= nullptr)swap(nd->left,tmp->left);
-                if (tmp->right!= nullptr)swap(nd->right,tmp->right);
+//                remove(tmp, _rt);
+
+
+
+//                node *tp = new node(tmp->val,nd->father, nd->left, nd->right);
+//                if (nd!=root) {
+//                    if (nd->father->left == nd)nd->father->left = tp;
+//                    else nd->father->right = tp;
+//                }
+//                nd->left->father=tp;
+//                nd->right->father=tp;
+//                delete nd;
+//                nd= nullptr;
+//                nd=tp;
+
+//                if (nd->father->left==nd)nd->father->left=tmp;
+//                else nd->father->right=tmp;
+//                nd->left->father=tmp;
+//                nd->right->father=tmp;
+//
+//
+//                if (tmp->left!= nullptr)swap(nd->left->father,tmp->left->father);
+//                if (tmp->right!= nullptr)swap(nd->right->father,tmp->right->father);
+////                pt(nd->father);std::cout<<'v'<<std::endl;
+////                pt(tmp->father);std::cout<<'v'<<std::endl;
+//                if (nd!=root){
+//                    if (nd->father->left==nd&&tmp->father->left==tmp)swap(nd->father->left,tmp->father->left);
+//                    else if (nd->father->left==nd&&tmp->father->right==tmp)swap(nd->father->left,tmp->father->right);
+//                    else if (nd->father->right==nd&&tmp->father->left==tmp)swap(nd->father->right,tmp->father->left);
+//                    else if (nd->father->right==nd&&tmp->father->right==tmp)swap(nd->father->right,tmp->father->right);
+//                }
+////                pt(nd->father);std::cout<<'v'<<std::endl;
+////                pt(tmp->father);std::cout<<'v'<<std::endl;
+//
+//                swap(nd->father,tmp->father);
+//                if (tmp->left!= nullptr)swap(nd->left,tmp->left);
+//                if (tmp->right!= nullptr)swap(nd->right,tmp->right);
+////                pt(nd->father);
+////                std::cout << 'v' << std::endl;
+////                pt(tmp->father);
+////                std::cout << 'v' << std::endl;
+
 
                 //print();
 //                std::cout << std::endl;///
-                remove(tmp, _rt);
             }
         }
 
@@ -346,11 +467,12 @@ namespace sjtu {
                   (height(t->right) - height(t->left) == 2 &&
                    (height(t->right->left) - height(t->right->right) == 1 ||
                     height(t->right->left) - height(t->right->right) == 0 ||
-                    height(t->right->left) - height(t->right->right) == -1)))||!(height(t->left) - height(t->right) == 1 || height(t->left) - height(t->right) == 0 ||
-                                                                                (height(t->left) - height(t->right) == 2 &&
-                                                                                 (height(t->left->right) - height(t->left->left) == 1 ||
-                                                                                  height(t->left->right) - height(t->left->left) == 0 ||
-                                                                                  height(t->left->right) - height(t->left->left) == -1))))
+                    height(t->right->left) - height(t->right->right) == -1))) &&
+                !(height(t->left) - height(t->right) == 1 || height(t->left) - height(t->right) == 0 ||
+                  (height(t->left) - height(t->right) == 2 &&
+                   (height(t->left->right) - height(t->left->left) == 1 ||
+                    height(t->left->right) - height(t->left->left) == 0 ||
+                    height(t->left->right) - height(t->left->left) == -1))))
                 return;
 //            pt(t);std::cout<<'a'<<std::endl;//
             if (sub == left) {
@@ -378,7 +500,11 @@ namespace sjtu {
                         return;
                     }
                     //print();std::cout<<"rr"<<std::endl;///
+//                    std::cout<<"before rr:"<<std::endl;
+//                    print();
                     rr(t);
+//                    std::cout<<"after rr:"<<std::endl;
+//                    print();
                     //print();std::cout<<"rr"<<std::endl;///
                     if (t != root)
                         t->father->height = max_height(t->father->left, t->father->right) + 1;
@@ -421,6 +547,7 @@ namespace sjtu {
                     back_height(t);
                 }
             }
+            t->height = max_height(t->left, t->right) + 1;
         }
 
         static node *getll(node *_nd) {//得到最左的孩子
@@ -433,12 +560,6 @@ namespace sjtu {
             return getrr(_nd->right);
         }
 
-        void pt(node *nd) {
-            if (nd == nullptr)return;
-            std::cout << nd->val.first << '(' << nd->height << ')' << " ";
-            pt(nd->left);
-            pt(nd->right);
-        }
 
     public:
 
@@ -542,7 +663,7 @@ namespace sjtu {
                     throw invalid_iterator();
                 }
                 nd = nd->father;
-                return iterater(tmp, rt);
+                return iterator(tmp, rt);
             }
 
             /**
@@ -806,7 +927,7 @@ namespace sjtu {
 
         const T &at(const Key &key) const {
             if (root == nullptr)throw index_out_of_bound();
-            node *tmp = root->find(key)->get_t();
+            node *tmp = root->find(key);
             if (tmp == nullptr)throw index_out_of_bound();
             return tmp->get_t();
         }
@@ -902,8 +1023,17 @@ namespace sjtu {
             node *tmp = nullptr;
             if (root != nullptr)tmp = root->find(value.first);
             if (tmp != nullptr)return pair<iterator, bool>(iterator(tmp, root), false);
+            _size++;
             return pair<iterator, bool>(iterator(_insert(root, no, value.first, value.second), root), true);
         }
+        // void insert(const value_type &value) {
+        //     node *no = nullptr;
+        //     node *tmp = nullptr;
+        //     if (root != nullptr)tmp = root->find(value.first);
+        //     if (tmp != nullptr)return;
+        //     _insert(root, nullptr, value.first, value.second);
+        //     _size++;
+        // }
 
         /**
          * erase the element at pos.
@@ -914,6 +1044,17 @@ namespace sjtu {
             if (pos.rt != root || pos.nd == nullptr)throw invalid_iterator();
             remove(pos.nd, root);
             _size--;
+        }
+
+        bool erase(const Key &key) {
+            if (root == nullptr)return false;
+            node *tmp = root->find(key);
+//            print();std::cout<<std::endl;
+            if (tmp == nullptr)return false;
+            remove(tmp, root);
+//            check();
+            _size--;
+            return true;
         }
 
         /**
@@ -950,6 +1091,46 @@ namespace sjtu {
 
         void print() {
             pt(root);
+            std::cout << std::endl;
+        }
+
+        void pt(node *nd) {
+            if (nd == nullptr)return;
+            std::cout << nd->val.first << '(' << nd->height << ')' << " ";
+            std::cout << "[";
+            if (nd->father != nullptr)std::cout << 'f' << nd->father->val.first << ' ';
+            if (nd->left != nullptr)std::cout << 'l' << nd->left->val.first << ' ';
+            if (nd->right != nullptr)std::cout << 'r' << nd->right->val.first << ' ';
+            std::cout << "] ";
+            pt(nd->left);
+            pt(nd->right);
+        }
+
+        void pt(iterator nnd) {
+//            pt(nnd.nd->father->father);
+//            std::cout<<"f"<<std::endl;
+            if (nnd == end())return;
+            node *nd = nnd.nd;
+            if (nd == nullptr)return;
+            std::cout << nd->val.first << '(' << nd->height << ')' << " ";
+            pt(nd->left);
+            pt(nd->right);
+        }
+
+        void ck(node *nd) {
+            if (nd == nullptr)return;
+//            std::cout<<nd->val.first<<std::endl;
+            ck(nd->left);
+            ck(nd->right);
+            assert(good(nd));
+            if (nd->left != nullptr)assert(nd->left->father == nd);
+            if (nd->right != nullptr)assert(nd->right->father == nd);
+//            if (nd->left!= nullptr)nd->left->father=nd;
+//            if (nd->right!= nullptr)nd->right->father=nd;
+        }
+
+        void check() {
+            ck(root);
         }
     };
 
