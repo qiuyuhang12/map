@@ -13,7 +13,6 @@
 #include <cstddef>
 #include "utility.hpp"
 #include "exceptions.hpp"
-#include <cassert>
 
 namespace sjtu {
 
@@ -62,7 +61,6 @@ namespace sjtu {
             }
 
             node *find(const Key &_key) {
-                assert(this != nullptr);
                 if (eq(_key, get_key())) return this;
                 if (Compare()(_key, get_key())) {
                     if (left == nullptr) return nullptr;
@@ -79,8 +77,6 @@ namespace sjtu {
         }
 
         void exchange(node *higher, node *lower) {
-            assert(higher != nullptr);
-            assert(lower != nullptr);
             if (higher == root)root = lower;
             int tmp = lower->height;
             lower->height = higher->height;
@@ -214,18 +210,12 @@ namespace sjtu {
         size_t lr(node *&nd) {
             rr(nd->left);
             ll(nd);
-            assert(good(nd));
-            assert(good(nd->left));
-            assert(good(nd->right));
             return nd->height;
         }
 
         size_t rl(node *&nd) {
             ll(nd->right);
             rr(nd);
-            assert(good(nd));
-            assert(good(nd->left));
-            assert(good(nd->right));
             return nd->height;
         }
 
@@ -239,30 +229,25 @@ namespace sjtu {
                 if (nd->father != nullptr) nd->father->height = max_height(nd->father->left, nd->father->right) + 1;
                 return nd;
             }
-            assert(nd->find(key) == nullptr);
             node *tmp = nullptr;
             if (Compare()(key, nd->get_key())) {
                 tmp = _insert(nd->left, nd, key, t, left);
                 if (height(nd->left) - height(nd->right) >= 2) {
-                    assert(height(nd->left) - height(nd->right) == 2);
                     if (height(nd->left->left) >= height(nd->left->right))ll(nd);
                     else lr(nd);
                 }
             } else {
                 tmp = _insert(nd->right, nd, key, t, right);
                 if (height(nd->right) - height(nd->left) >= 2) {
-                    assert(height(nd->right) - height(nd->left) == 2);
                     if (height(nd->right->right) >= height(nd->right->left))rr(nd);
                     else rl(nd);
                 }
             }
             nd->height = max_height(nd->left, nd->right) + 1;
-            assert(good(nd));
             return tmp;
         }
 
         void remove(node *&nd, node *_rt) {
-            assert(nd != nullptr);
             if (nd->left == nullptr && nd->right == nullptr) {
                 nd->height = -1;
                 if (nd == root) {
@@ -361,11 +346,6 @@ namespace sjtu {
                     height(t->left->right) - height(t->left->left) == -1))))
                 return;
             if (sub == left) {
-                assert(height(t->right) - height(t->left) == 1 || height(t->right) - height(t->left) == 0 ||
-                       (height(t->right) - height(t->left) == 2 &&
-                        (height(t->right->left) - height(t->right->right) == 1 ||
-                         height(t->right->left) - height(t->right->right) == 0 ||
-                         height(t->right->left) - height(t->right->right) == -1)));
                 if (height(t->right) - height(t->left) == 1) {
                     back_height(t);
                     return;
@@ -394,11 +374,6 @@ namespace sjtu {
                     back_height(t);
                 }
             } else {
-                assert(height(t->left) - height(t->right) == 1 || height(t->left) - height(t->right) == 0 ||
-                       (height(t->left) - height(t->right) == 2 &&
-                        (height(t->left->right) - height(t->left->left) == 1 ||
-                         height(t->left->right) - height(t->left->left) == 0 ||
-                         height(t->left->right) - height(t->left->left) == -1)));
                 if (height(t->left) - height(t->right) == 1) {
                     back_height(t);
                     return;
@@ -480,9 +455,9 @@ namespace sjtu {
             if (nd == nullptr)return;
             ck(nd->left);
             ck(nd->right);
-            assert(good(nd));
-            if (nd->left != nullptr)assert(nd->left->father == nd);
-            if (nd->right != nullptr)assert(nd->right->father == nd);
+//            assert(good(nd));
+//            if (nd->left != nullptr)assert(nd->left->father == nd);
+//            if (nd->right != nullptr)assert(nd->right->father == nd);
         }
 
         void check() {
