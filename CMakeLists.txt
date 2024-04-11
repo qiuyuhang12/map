@@ -1,8 +1,9 @@
 cmake_minimum_required(VERSION 3.28)
 project(map)
 
-set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address,leak,undefined")
+set(CMAKE_CXX_STANDARD 20)
+#set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address,leak,undefined")
+#set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=thread")
 add_executable(main
         src/utility.hpp
         src/map.hpp
@@ -15,11 +16,27 @@ add_executable(main2
         src/exceptions.hpp
         main2.cpp
 )
+add_executable(main3_my_sort
+        src/utility.hpp
+        src/map.hpp
+        src/exceptions.hpp
+        main3.cpp
+        src/my_sort.hpp
+)
+add_executable(main4_my_print
+        src/utility.hpp
+        src/map.hpp
+        src/exceptions.hpp
+        main4.cpp
+        src/my_sort.hpp
+        src/my_print.hpp
+)
 add_executable(code1
         src/utility.hpp
         src/map.hpp
         src/exceptions.hpp
         data/one/code.cpp
+        src/my_sort.hpp
 )
 add_executable(code2
         src/utility.hpp

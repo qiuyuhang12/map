@@ -490,6 +490,9 @@ namespace sjtu {
              *   just add whatever you want.
              */
         public:
+            struct my_itr{};
+            my_itr myItr;
+
             iterator() {}
 
             iterator(const iterator &other) {
@@ -617,6 +620,9 @@ namespace sjtu {
             }
 
         public:
+            struct my_itr{};
+            my_itr myItr;
+
             const_iterator() {}
 
             const_iterator(const const_iterator &other) {
